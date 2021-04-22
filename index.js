@@ -1,25 +1,55 @@
 const express = require('express')
 const app = express()
-const { Sequelize } = requiere('sequelize')
+const { Sequelize, DataTypes } = require('sequelize')
+const TarefaModel = require('./models/tarefa')
 
-const sequelize = new Sequelize({ 
-    dialect: 'sqlite',
-    storage: 'minha-database.db'
-}) 
+app.set ('view engine', 'ejs')
 
-app.set ('engine', 'ejs')
+const sequelize = new Sequelize({ dialect: 'sqlite', storage: 'minha-database.db'}) 
 
-// listar tarefas
-app.get('/tarefas', (req, res) => {
-    res.json({action: 'Listing tasks'})
+const Tarefas = TarefaModel(sequelize, DataTypes)
+
+app.use(express.json())
+
+// Mostrar lista de tarefas
+app.get('/tarefas', async (req, res) => {
+    const lisTarefas = await Tarefas.findAll();
+    res.json({ Tarefas: lisTarefas })
+})
+
+// Mostrar tarefa por ID
+app.get('/tarefas/:id', async (req, res) => {
+    const tarefaId = req.params.id
+    const tarefa = await Tarefas.findByPk(tarefaId)
+    res.json({ action: 'Mostrar Tarefa', Tarefas: tarefa })
 })
 
 // Criar tarefa
-app.post('/tarefas', (req, res) => {
-    const body = req.body
-
-    res.json(body)
+app.post('/tarefas', async (req, res) => {
+    const novatarefa = await Tarefas.create({
+        name: req.body.name
+    })
+   res.json({ novatarefa });
 })
+
+// Atualizar tarefa
+app.put('/tarefas/:id', async (req, res) => {
+    const tarefaId = req.params.id
+    const lisTarefas = await Tarefas.findByPk(tarefaId)
+    lisTarefas.update({
+        name: req.body.name
+    })
+    res.send({ lisTarefas: lisTarefas })
+})
+  
+// Apagar tarefa
+app.delete('/tarefas/:id', async (req, res) => {
+    const tarefaId = req.params.id
+    const apagarTarefa = await Tarefas.destroy({ where: { id: tarefaId} })
+  
+    res.send({ action: 'Apagar tarefa', apagarTarefa: apagarTarefa})
+})
+
 
 app.listen(8080, () => {
     console.log('Iniciando o servidor express')
